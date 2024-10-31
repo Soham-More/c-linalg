@@ -1,4 +1,4 @@
-#include <include/pyvisual.h>
+#include "../pyvisual.h"
 
 typedef struct PyViSectionData
 {
