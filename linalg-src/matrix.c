@@ -1,4 +1,4 @@
-#include "../linalg.h"
+#include "include/linalg.h"
 
 #include <stdlib.h>
 #include <memory.h>
