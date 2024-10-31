@@ -3,8 +3,8 @@
 // this library helps with better visualizing C vectors in python
 
 #include <stdio.h>
-#include <include/linalg.h>
-#include <include/stack.h>
+#include "linalg.h"
+#include "stack.h"
 
 typedef struct PyViBase
 {
