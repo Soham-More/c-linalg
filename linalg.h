@@ -222,21 +222,3 @@ double mat2DMin(Mat2d a);
 
 // free the matrix on the heap
 void freeMat2D(Mat2d* mat);
-
-// a sparse matrix with only few diagonals populated
-typedef struct MatDiag
-{
-    Vec* diagonals;
-    size_t len;
-    // must be odd
-    size_t diag_count;
-} MatDiag;
-
-MatDiag matDiagInit(size_t diag_count, size_t n);
-Vec* matDiagGetDiag(MatDiag mat, size_t index);
-
-// solve Ax = b using gauss elmination, modify the given matrix
-void matDiagSolveDestructive(MatDiag* mat, Vec x, Vec* y);
-
-void freeMatDiag(MatDiag* mat);
-
