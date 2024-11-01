@@ -55,6 +55,16 @@ Mat2d mat2DCopyA(Mat2d matrix)
     for(size_t i = 0; i < mat.cols*mat.rows; i++) mat.mat[i] = matrix.mat[i];
     return mat;
 }
+// make a copy of a matrix on heap
+int mat2DCopy(Mat2d src, Mat2d* dst)
+{
+    LINALG_ASSERT_ERROR(src.rows == 0 || src.cols == 0, LINALG_ERROR, "invalid zero row or col matrix requested!");
+    LINALG_ASSERT_ERROR(!src.mat, LINALG_ERROR, "invalid zero row or col matrix requested!");
+    LINALG_ASSERT_ERROR(src.cols == dst->cols && src.rows == dst->rows, LINALG_ERROR, "mat2DCopy arguments do not have same size!");
+
+    for(size_t i = 0; i < src.cols*src.rows; i++) dst->mat[i] = src.mat[i];
+    return LINALG_OK;
+}
 
 // construct a matrix from a pointer(does not allocate)
 Mat2d mat2DConstruct(double* ptr, size_t rows, size_t cols)
@@ -228,6 +238,76 @@ Mat2d mat2DMulA(Mat2d A, Mat2d B)
     return result;
 }
 
+// solve Ax = b using gauss elmination
+// scratch space should be nx(n+1) big and order should be n elements big
+int mat2DSqSolve(Mat2d A, Vec x, Mat2d* scratch, size_t* order, Vec* y)
+{
+    LINALG_ASSERT_ERROR(A.rows != A.cols, LINALG_ERROR, "invalid operation: mat2DSq operation on non square matrix mat(%zux%zu)", A.rows, A.cols);
+    LINALG_ASSERT_ERROR(scratch->rows + 1 != scratch->cols, LINALG_ERROR, "invalid operation: mat2DSq operation wrong scratch space mat(%zux%zu)", scratch->rows, scratch->cols);
+
+    size_t N = A.rows;
+
+    // make the augmented matrix
+    for(size_t i = 0; i < N; i++)
+    {
+        for(size_t j = 0; j < N; j++)
+        {
+            LA_UNPACK_PTR(scratch)[i][j] = LA_UNPACK(A)[i][j];
+        }
+        LA_UNPACK_PTR(scratch)[i][N] = VEC_INDEX(x, i);
+        order[i] = i;
+    }
+
+    for(size_t h = 0, k = 0; (h < N) && (k < N + 1); k++)
+    {
+        /* Find the k-th pivot: */
+        size_t i_max = -1;
+        double maxval = 0.0;
+        for(size_t i = h; i < N; i++)
+        {
+            if(maxval < fabs(LA_UNPACK_PTR(scratch)[order[i]][k]))
+            {
+                maxval = fabs(LA_UNPACK_PTR(scratch)[order[i]][k]);
+                i_max = i;
+            }
+        }
+
+        // no value greater than 1 found in this row
+        if(i_max == -1) continue;
+
+        //swap rows(h, i_max)
+        size_t tmp = order[i_max];
+        order[i_max] = order[h];
+        order[h] = tmp;
+
+        /* Do for all rows below pivot: */
+        for(size_t i = h + 1; i < N; i++)
+        {
+            double f = LA_UNPACK_PTR(scratch)[order[i]][k] / LA_UNPACK_PTR(scratch)[order[h]][k];
+            /* Fill with zeros the lower part of pivot column: */
+            LA_UNPACK_PTR(scratch)[order[i]][k] = 0;
+            /* Do for all remaining elements in current row: */
+            for(size_t j = k + 1; j < N + 1; j++)
+            {
+                LA_UNPACK_PTR(scratch)[order[i]][j] = LA_UNPACK_PTR(scratch)[order[i]][j] - LA_UNPACK_PTR(scratch)[order[h]][j] * f;
+            }
+        }
+        /* Increase pivot row and column */
+        h++;
+    }
+
+    for(size_t i = N - 1; i >= 0; i--)
+    {
+        double sum = LA_UNPACK_PTR(scratch)[order[i]][N];
+        for(size_t j = i + 1; j < N; j++)
+        {
+            sum -= LA_UNPACK_PTR(scratch)[order[i]][j] * VEC_INDEX(*y, j);
+        }
+        VEC_INDEX(*y, i) = sum / LA_UNPACK_PTR(scratch)[order[i]][i];
+        if(i == 0) return LINALG_OK;
+    }
+}
+
 // compute result = A^T. prints error if the input is invalid
 int mat2DTranspose(Mat2d A, Mat2d* result)
 {
@@ -279,6 +359,87 @@ void freeMat2D(Mat2d* mat)
     free(mat->mat);
     mat->rows = 0;
     mat->cols = 0;
+}
+
+MatDiag matDiagInit(size_t diag_count, size_t n)
+{
+    MatDiag mat;
+    mat.diag_count = diag_count;
+    mat.len = n;
+    mat.diagonals = malloc(sizeof(Vec) * diag_count);
+}
+Vec* matDiagGetDiag(MatDiag mat, size_t index)
+{
+    return &(mat.diagonals[index]);
+}
+
+/*
+// solve Ax = b using gauss elmination, modify the given matrix
+void matDiagSolveDestructive(MatDiag* mat, Vec x, Vec* y)
+{
+    size_t N = A.rows;
+
+    size_t* order;
+
+    // make the augmented matrix
+    for(size_t i = 0; i < N; i++)
+    {
+        order[i] = i;
+    }
+
+    for(size_t h = 0, k = 0; (h < N) && (k < N + 1); k++)
+    {
+        size_t i_max = -1;
+        double maxval = 0.0;
+        for(size_t i = h; i < N; i++)
+        {
+            if(maxval < fabs(LA_UNPACK_PTR(scratch)[order[i]][k]))
+            {
+                maxval = fabs(LA_UNPACK_PTR(scratch)[order[i]][k]);
+                i_max = i;
+            }
+        }
+
+        // no value greater than 1 found in this row
+        if(i_max == -1) continue;
+
+        //swap rows(h, i_max)
+        size_t tmp = order[i_max];
+        order[i_max] = order[h];
+        order[h] = tmp;
+
+        // Do for all rows below pivot: 
+        for(size_t i = h + 1; i < N; i++)
+        {
+            double f = LA_UNPACK_PTR(scratch)[order[i]][k] / LA_UNPACK_PTR(scratch)[order[h]][k];
+            // Fill with zeros the lower part of pivot column:
+            LA_UNPACK_PTR(scratch)[order[i]][k] = 0;
+            // Do for all remaining elements in current row: 
+            for(size_t j = k + 1; j < N + 1; j++)
+            {
+                LA_UNPACK_PTR(scratch)[order[i]][j] = LA_UNPACK_PTR(scratch)[order[i]][j] - LA_UNPACK_PTR(scratch)[order[h]][j] * f;
+            }
+        }
+        // Increase pivot row and column
+        h++;
+    }
+
+    for(size_t i = N - 1; i >= 0; i--)
+    {
+        double sum = LA_UNPACK_PTR(scratch)[i][N];
+        for(size_t j = i + 1; j < N; j++)
+        {
+            sum -= LA_UNPACK_PTR(scratch)[i][j] * VEC_INDEX(*y, j);
+        }
+        VEC_INDEX(*y, i) = sum / LA_UNPACK_PTR(scratch)[i][i];
+    }
+}
+*/
+void freeMatDiag(MatDiag* mat)
+{
+    mat->len = 0;
+    mat->diag_count = 0;
+    free(mat->diagonals);
 }
 
 

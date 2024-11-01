@@ -22,6 +22,9 @@ void dynStackPush(DynStack* dstack, void* data);
 // access a element in dyn stack, safely
 void* dynStackGet(DynStack dstack, size_t index);
 
+// clear the stack
+void dynStackClear(DynStack* dstack);
+
 // free a dyn stack, WARNING: Free memory in the dstack before freeing the stack
 void freeDynStack(DynStack* dstack);
 

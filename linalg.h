@@ -1,5 +1,6 @@
 #pragma once
 #include <stdio.h>
+#include "stack.h"
 
 #define LINALG_OK 0
 #define LINALG_ERROR 1
@@ -165,6 +166,8 @@ Mat2d mat2DInitOnesA(size_t rows, size_t cols);
 
 // make a copy of a matrix on heap
 Mat2d mat2DCopyA(Mat2d matrix);
+// make a copy of a matrix on heap
+int mat2DCopy(Mat2d src, Mat2d* dst);
 
 // construct a matrix from a pointer(does not allocate)
 Mat2d mat2DConstruct(double* ptr, size_t rows, size_t cols);
@@ -205,6 +208,10 @@ int mat2DMul(Mat2d A, Mat2d B, Mat2d* result);
 // compute result = A*B(allocates memory). prints error if the input is invalid
 Mat2d mat2DMulA(Mat2d A, Mat2d B);
 
+// solve Ax = b using gauss elmination
+// scratch space should be nx(n+1) big and order should be n elements big
+int mat2DSqSolve(Mat2d A, Vec x, Mat2d* scratch, size_t* order, Vec* y);
+
 // compute result = A^T. prints error if the input is invalid
 int mat2DTranspose(Mat2d A, Mat2d* result);
 
@@ -215,3 +222,21 @@ double mat2DMin(Mat2d a);
 
 // free the matrix on the heap
 void freeMat2D(Mat2d* mat);
+
+// a sparse matrix with only few diagonals populated
+typedef struct MatDiag
+{
+    Vec* diagonals;
+    size_t len;
+    // must be odd
+    size_t diag_count;
+} MatDiag;
+
+MatDiag matDiagInit(size_t diag_count, size_t n);
+Vec* matDiagGetDiag(MatDiag mat, size_t index);
+
+// solve Ax = b using gauss elmination, modify the given matrix
+void matDiagSolveDestructive(MatDiag* mat, Vec x, Vec* y);
+
+void freeMatDiag(MatDiag* mat);
+

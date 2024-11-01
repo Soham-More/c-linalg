@@ -44,6 +44,12 @@ void* dynStackGet(DynStack dstack, size_t index)
     }
 }
 
+// clear the stack
+void dynStackClear(DynStack* dstack)
+{
+    dstack->len = 0;
+}
+
 // free a dyn stack
 void freeDynStack(DynStack* dstack)
 {
