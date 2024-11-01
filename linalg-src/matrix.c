@@ -360,3 +360,50 @@ void freeMat2D(Mat2d* mat)
     mat->rows = 0;
     mat->cols = 0;
 }
+
+MatTriDiag triDiagInitA(double value, size_t n)
+{
+    MatTriDiag mat;
+    mat.diagonal = vecInitA(value, n);
+    mat.subdiagonal = vecInitA(value, n - 1);
+    mat.superdiagonal = vecInitA(value, n - 1);
+
+    mat.scratch = vecInitA(value, n);
+
+    return mat;
+}
+MatTriDiag triDiagInitZeroA(size_t n)
+{
+    return triDiagInitA(0, n);
+}
+
+
+// solve Ax = b using tridiagonal matrix algorithm
+void triDiagSolveDestructive(MatTriDiag* A, Vec* x)
+{
+    VEC_INDEX(A->scratch, 0) = VEC_INDEX(A->superdiagonal, 0) / VEC_INDEX(A->diagonal, 0);
+    VEC_INDEX(*x, 0) = VEC_INDEX(*x, 0) / VEC_INDEX(A->diagonal, 0);
+
+    for (int ix = 1; ix < A->diagonal.len; ix++)
+    {
+        if (ix < A->diagonal.len-1)
+        {
+            VEC_INDEX(A->scratch, ix) = VEC_INDEX(A->superdiagonal, ix) / (VEC_INDEX(A->diagonal, ix) - VEC_INDEX(A->subdiagonal, ix) * VEC_INDEX(A->scratch, ix - 1));
+        }
+        VEC_INDEX(*x, ix) = (VEC_INDEX(*x, ix) - VEC_INDEX(A->subdiagonal, ix) * VEC_INDEX(*x, ix - 1)) / (VEC_INDEX(A->diagonal, ix) - VEC_INDEX(A->subdiagonal, ix) * VEC_INDEX(A->scratch, ix-1));
+    }
+
+    for (size_t ix = A->diagonal.len - 2; ix > 0; ix--)
+    {
+        VEC_INDEX(*x, ix) -= VEC_INDEX(A->scratch, ix) * VEC_INDEX(*x, ix + 1);
+    }
+    VEC_INDEX(*x, 0) -= VEC_INDEX(A->scratch, 0) * VEC_INDEX(*x, 1);
+}
+
+void freeMatTriDiag(MatTriDiag* mat)
+{
+    freeVec(&mat->diagonal);
+    freeVec(&mat->subdiagonal);
+    freeVec(&mat->superdiagonal);
+    freeVec(&mat->scratch);
+}

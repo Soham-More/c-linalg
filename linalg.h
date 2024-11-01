@@ -222,3 +222,23 @@ double mat2DMin(Mat2d a);
 
 // free the matrix on the heap
 void freeMat2D(Mat2d* mat);
+
+// a square matrix, with only 3 diagonals
+// as it's non zero elements
+typedef struct MatTriDiag
+{
+    Vec diagonal;
+    Vec subdiagonal;
+    Vec superdiagonal;
+
+    // some scratch space for algorithms
+    Vec scratch;
+} MatTriDiag;
+
+MatTriDiag triDiagInitA(double value, size_t n);
+MatTriDiag triDiagInitZeroA(size_t n);
+
+// solve Ax = b using tridiagonal matrix algorithm
+void triDiagSolveDestructive(MatTriDiag* A, Vec x, Vec* y);
+
+void freeMatTriDiag(MatTriDiag* mat);
