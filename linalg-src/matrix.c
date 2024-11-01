@@ -377,6 +377,33 @@ MatTriDiag triDiagInitZeroA(size_t n)
     return triDiagInitA(0, n);
 }
 
+// add 2 tridiagonal matrixes and get result into another tridiagonal matrix, prints error if input is invalid
+int triDiagAdd(MatTriDiag a, MatTriDiag b, MatTriDiag* result)
+{
+    vecAdd(a.diagonal, b.diagonal, &result->diagonal);
+    vecAdd(a.subdiagonal, b.subdiagonal, &result->subdiagonal);
+    vecAdd(a.superdiagonal, b.superdiagonal, &result->superdiagonal);
+
+    return LINALG_OK;
+}
+// subtract 2 tridiagonal matrixes (a - b) and get result into another tridiagonal matrix, prints error if input is invalid
+int triDiagSub(MatTriDiag a, MatTriDiag b, MatTriDiag* result)
+{
+    vecSub(a.diagonal, b.diagonal, &result->diagonal);
+    vecSub(a.subdiagonal, b.subdiagonal, &result->subdiagonal);
+    vecSub(a.superdiagonal, b.superdiagonal, &result->superdiagonal);
+
+    return LINALG_OK;
+}
+// multiply scalar value to tridiagonal matrix and get result into another tridiagonal matrix, prints error if input is invalid
+int triDiagScale(double a, MatTriDiag b, MatTriDiag* result)
+{
+    vecScale(a, b.diagonal, &result->diagonal);
+    vecScale(a, b.subdiagonal, &result->subdiagonal);
+    vecScale(a, b.superdiagonal, &result->superdiagonal);
+
+    return LINALG_OK;
+}
 
 // solve Ax = b using tridiagonal matrix algorithm
 void triDiagSolveDestructive(MatTriDiag* A, Vec* x)

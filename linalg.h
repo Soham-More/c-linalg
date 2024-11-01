@@ -238,6 +238,13 @@ typedef struct MatTriDiag
 MatTriDiag triDiagInitA(double value, size_t n);
 MatTriDiag triDiagInitZeroA(size_t n);
 
+// add 2 tridiagonal matrixes and get result into another tridiagonal matrix, prints error if input is invalid
+int triDiagAdd(MatTriDiag a, MatTriDiag b, MatTriDiag* result);
+// subtract 2 tridiagonal matrixes (a - b) and get result into another tridiagonal matrix, prints error if input is invalid
+int triDiagSub(MatTriDiag a, MatTriDiag b, MatTriDiag* result);
+// multiply scalar value to tridiagonal matrix and get result into another tridiagonal matrix, prints error if input is invalid
+int triDiagScale(double a, MatTriDiag b, MatTriDiag* result);
+
 // solve Ax = b using tridiagonal matrix algorithm
 void triDiagSolveDestructive(MatTriDiag* A, Vec x, Vec* y);
 
