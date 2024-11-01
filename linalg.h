@@ -245,7 +245,12 @@ int triDiagSub(MatTriDiag a, MatTriDiag b, MatTriDiag* result);
 // multiply scalar value to tridiagonal matrix and get result into another tridiagonal matrix, prints error if input is invalid
 int triDiagScale(double a, MatTriDiag b, MatTriDiag* result);
 
+// add vec to diagonal entries
+int triDiagAddDiagonalSelf(MatTriDiag* a, Vec diag);
+// add vec to diagonal entries
+int triDiagSubDiagonalSelf(MatTriDiag* a, Vec diag);
+
 // solve Ax = b using tridiagonal matrix algorithm
-void triDiagSolveDestructive(MatTriDiag* A, Vec x, Vec* y);
+void triDiagSolveDestructive(MatTriDiag* A, Vec* x);
 
 void freeMatTriDiag(MatTriDiag* mat);

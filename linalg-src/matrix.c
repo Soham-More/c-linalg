@@ -405,6 +405,19 @@ int triDiagScale(double a, MatTriDiag b, MatTriDiag* result)
     return LINALG_OK;
 }
 
+// add vec to diagonal entries
+int triDiagAddDiagonalSelf(MatTriDiag* a, Vec diag)
+{
+    vecAdd(a->diagonal, diag, &a->diagonal);
+    return LINALG_OK;
+}
+// add vec to diagonal entries
+int triDiagSubDiagonalSelf(MatTriDiag* a, Vec diag)
+{
+    vecSub(a->diagonal, diag, &a->diagonal);
+    return LINALG_OK;
+}
+
 // solve Ax = b using tridiagonal matrix algorithm
 void triDiagSolveDestructive(MatTriDiag* A, Vec* x)
 {
