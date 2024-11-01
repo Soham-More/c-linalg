@@ -261,7 +261,7 @@ int mat2DSqSolve(Mat2d A, Vec x, Mat2d* scratch, size_t* order, Vec* y)
     for(size_t h = 0, k = 0; (h < N) && (k < N + 1); k++)
     {
         /* Find the k-th pivot: */
-        size_t i_max = -1;
+        size_t i_max = (size_t)-1;
         double maxval = 0.0;
         for(size_t i = h; i < N; i++)
         {
@@ -273,7 +273,7 @@ int mat2DSqSolve(Mat2d A, Vec x, Mat2d* scratch, size_t* order, Vec* y)
         }
 
         // no value greater than 1 found in this row
-        if(i_max == -1) continue;
+        if(i_max == (size_t)-1) continue;
 
         //swap rows(h, i_max)
         size_t tmp = order[i_max];
@@ -296,7 +296,10 @@ int mat2DSqSolve(Mat2d A, Vec x, Mat2d* scratch, size_t* order, Vec* y)
         h++;
     }
 
-    for(size_t i = N - 1; i >= 0; i--)
+    // i != (size_t)-1 is done here to remove a compiler warning
+    // DO NOT REMOVE "if(i == 0) return LINALG_OK;" 
+    // as C standards do not guarantee i warp around
+    for(size_t i = N - 1; i != (size_t)-1; i--)
     {
         double sum = LA_UNPACK_PTR(scratch)[order[i]][N];
         for(size_t j = i + 1; j < N; j++)
@@ -304,6 +307,7 @@ int mat2DSqSolve(Mat2d A, Vec x, Mat2d* scratch, size_t* order, Vec* y)
             sum -= LA_UNPACK_PTR(scratch)[order[i]][j] * VEC_INDEX(*y, j);
         }
         VEC_INDEX(*y, i) = sum / LA_UNPACK_PTR(scratch)[order[i]][i];
+        
         if(i == 0) return LINALG_OK;
     }
 }
@@ -424,7 +428,7 @@ void triDiagSolveDestructive(MatTriDiag* A, Vec* x)
     VEC_INDEX(A->scratch, 0) = VEC_INDEX(A->superdiagonal, 0) / VEC_INDEX(A->diagonal, 0);
     VEC_INDEX(*x, 0) = VEC_INDEX(*x, 0) / VEC_INDEX(A->diagonal, 0);
 
-    for (int ix = 1; ix < A->diagonal.len; ix++)
+    for (size_t ix = 1; ix < A->diagonal.len; ix++)
     {
         if (ix < A->diagonal.len-1)
         {
