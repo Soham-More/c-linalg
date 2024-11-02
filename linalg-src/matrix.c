@@ -369,8 +369,8 @@ MatTriDiag triDiagInitA(double value, size_t n)
 {
     MatTriDiag mat;
     mat.diagonal = vecInitA(value, n);
-    mat.subdiagonal = vecInitA(value, n - 1);
-    mat.superdiagonal = vecInitA(value, n - 1);
+    mat.subdiagonal = vecInitA(value, n);
+    mat.superdiagonal = vecInitA(value, n);
 
     mat.scratch = vecInitA(value, n);
 
