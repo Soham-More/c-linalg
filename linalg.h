@@ -254,3 +254,47 @@ int triDiagSubDiagonalSelf(MatTriDiag* a, Vec diag);
 void triDiagSolveDestructive(MatTriDiag* A, Vec* x);
 
 void freeMatTriDiag(MatTriDiag* mat);
+
+typedef struct Vec2
+{
+    double x[2];
+} Vec2;
+
+Vec2 vec2Add(Vec2 a, Vec2 b);
+Vec2 vec2Sub(Vec2 a, Vec2 b);
+
+typedef struct Block2
+{
+    double mat[2][2];
+} Block2;
+
+Block2 blkInit(double value);
+Block2 blkInitZeros();
+
+Block2 blkAdd(Block2 A, Block2 B);
+Block2 blkSub(Block2 A, Block2 B);
+Block2 blkMul(Block2 A, Block2 B);
+Block2 blkInverse(Block2 A);
+Vec2 blkTransform(Block2 A, Vec2 x);
+
+double blkDeterminant(Block2 A);
+
+// a square matrix, with only 3 diagonals
+// as it's non zero elements
+typedef struct MatBlock2TD
+{
+    Block2* diagonal;
+    Block2* subdiagonal;
+    Block2* superdiagonal;
+    Block2* scratch;
+
+    size_t len;
+} MatBlock2TD;
+
+MatBlock2TD blkTriDiagInitA(double value, size_t n);
+MatBlock2TD blkTriDiagInitZeroA(size_t n);
+
+// solve Ax = b using block tridiagonal matrix algorithm
+void blkTriDiagSolveSelf(MatBlock2TD* A, Vec2* x);
+
+void freeMatBlock2TD(MatBlock2TD* mat);

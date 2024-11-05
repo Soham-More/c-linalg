@@ -451,3 +451,147 @@ void freeMatTriDiag(MatTriDiag* mat)
     freeVec(&mat->superdiagonal);
     freeVec(&mat->scratch);
 }
+
+Vec2 vec2Add(Vec2 a, Vec2 b)
+{
+    Vec2 r;
+    r.x[0] = a.x[0] + b.x[0];
+    r.x[1] = a.x[1] + b.x[1];
+    return r;
+}
+Vec2 vec2Sub(Vec2 a, Vec2 b)
+{
+    Vec2 r;
+    r.x[0] = a.x[0] - b.x[0];
+    r.x[1] = a.x[1] - b.x[1];
+    return r;
+}
+
+Block2 blkInit(double value)
+{
+    Block2 mat;
+    mat.mat[0][0] = value;
+    mat.mat[0][1] = value;
+    mat.mat[1][0] = value;
+    mat.mat[1][1] = value;
+    return mat;
+}
+Block2 blkInitZeros()
+{
+    return blkInit(0.0);
+}
+
+Block2 blkAdd(Block2 A, Block2 B)
+{
+    Block2 mat;
+    mat.mat[0][0] = A.mat[0][0] + B.mat[0][0];
+    mat.mat[0][1] = A.mat[0][1] + B.mat[0][1];
+    mat.mat[1][0] = A.mat[1][0] + B.mat[1][0];
+    mat.mat[1][1] = A.mat[1][1] + B.mat[1][1];
+    return mat;
+}
+Block2 blkSub(Block2 A, Block2 B)
+{
+    Block2 mat;
+    mat.mat[0][0] = A.mat[0][0] - B.mat[0][0];
+    mat.mat[0][1] = A.mat[0][1] - B.mat[0][1];
+    mat.mat[1][0] = A.mat[1][0] - B.mat[1][0];
+    mat.mat[1][1] = A.mat[1][1] - B.mat[1][1];
+    return mat;
+}
+Block2 blkMul(Block2 A, Block2 B)
+{
+    Block2 mat;
+    mat.mat[0][0] = A.mat[0][0] * B.mat[0][0] + A.mat[0][1] * B.mat[1][0];
+    mat.mat[0][1] = A.mat[0][0] * B.mat[0][1] + A.mat[0][1] * B.mat[1][1];
+    mat.mat[1][0] = A.mat[1][0] * B.mat[0][0] + A.mat[1][1] * B.mat[1][0];
+    mat.mat[1][1] = A.mat[1][0] * B.mat[0][1] + A.mat[1][1] * B.mat[1][1];
+    return mat;
+}
+Block2 blkInverse(Block2 A)
+{
+    double det = blkDeterminant(A);
+    Block2 mat;
+    mat.mat[0][0] =  A.mat[1][1] / det;
+    mat.mat[0][1] = -A.mat[0][1] / det;
+    mat.mat[1][0] = -A.mat[1][0] / det;
+    mat.mat[1][1] =  A.mat[0][0] / det;
+    return mat;
+}
+
+Vec2 blkTransform(Block2 A, Vec2 x)
+{
+    Vec2 y;
+    y.x[0] = A.mat[0][0] * x.x[0] + A.mat[0][1] * x.x[1];
+    y.x[1] = A.mat[1][0] * x.x[0] + A.mat[1][1] * x.x[1];
+    return y;
+}
+
+double blkDeterminant(Block2 A)
+{
+    return A.mat[0][0] * A.mat[1][1] - A.mat[0][1] * A.mat[1][0];
+}
+
+MatBlock2TD blkTriDiagInitA(double value, size_t n)
+{
+    MatBlock2TD matBlk2;
+    matBlk2.len = n;
+    matBlk2.diagonal = malloc(matBlk2.len * sizeof(Block2));
+    matBlk2.subdiagonal = malloc(matBlk2.len * sizeof(Block2));
+    matBlk2.superdiagonal = malloc(matBlk2.len * sizeof(Block2));
+    matBlk2.scratch = malloc(matBlk2.len * sizeof(Block2));
+
+    for(size_t i = 0; i < n; i++)
+    {
+        matBlk2.diagonal[i] = blkInit(value);
+        matBlk2.subdiagonal[i] = blkInit(value);
+        matBlk2.superdiagonal[i] = blkInit(value);
+        matBlk2.scratch[i] = blkInit(value);
+    }
+}
+MatBlock2TD blkTriDiagInitZeroA(size_t n)
+{
+    return blkTriDiagInitA(0.0, n);
+}
+
+// solve Ax = b using block tridiagonal matrix algorithm
+void blkTriDiagSolveSelf(MatBlock2TD* A, Vec2* x)
+{
+    Block2 inv = blkInverse(A->diagonal[0]);
+
+    A->scratch[0] = blkMul(inv, A->superdiagonal[0]);
+    x[0] = blkTransform(inv, x[0]);
+
+    for (size_t ix = 1; ix < A->len; ix++)
+    {
+        Block2 Factor = blkSub(A->diagonal[ix], blkMul(A->subdiagonal[ix], A->scratch[ix-1]));
+        Block2 invFactor = blkInverse(Factor);
+
+        if (ix < A->len-1)
+        {
+            A->scratch[ix] = blkMul(invFactor, A->superdiagonal[ix]);
+        }
+        Vec2 delX = vec2Sub(x[ix], blkTransform(A->subdiagonal[ix], x[ix - 1]));
+        x[ix] = blkTransform(invFactor, delX);
+    }
+
+    for (size_t ix = A->len - 2; ix > 0; ix--)
+    {
+        x[ix] = vec2Sub(x[ix], blkTransform(A->scratch[ix], x[ix + 1]));
+    }
+    x[0] = vec2Sub(x[0], blkTransform(A->scratch[0], x[1]));
+}
+
+void freeMatBlock2TD(MatBlock2TD* mat)
+{
+    free(mat->superdiagonal);
+    free(mat->diagonal);
+    free(mat->subdiagonal);
+    free(mat->scratch);
+
+    mat->diagonal = NULL;
+    mat->subdiagonal = NULL;
+    mat->superdiagonal = NULL;
+    mat->scratch = NULL;
+}
+
